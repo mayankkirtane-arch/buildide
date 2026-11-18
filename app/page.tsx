@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 
 export default function Home() {
@@ -8,6 +10,7 @@ export default function Home() {
         <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
           <a href="#features" style={{ color: '#a0a0b0' }}>Features</a>
           <a href="#pricing" style={{ color: '#a0a0b0' }}>Pricing</a>
+          <a href="/api/auth/github" style={{ color: '#a0a0b0' }}>Sign in</a>
           <Link href="/builder" style={{ background: '#7c5cff', padding: '10px 18px', borderRadius: 8, fontWeight: 600 }}>Launch IDE →</Link>
         </div>
       </nav>
@@ -60,7 +63,8 @@ export default function Home() {
             <h3 style={{ margin: 0 }}>Pro</h3>
             <div style={{ fontSize: 44, fontWeight: 800, margin: '16px 0' }}>$15<span style={{ fontSize: 16, color: '#9090a5' }}>/mo</span></div>
             <p style={{ color: '#9090a5' }}>Unlimited prompts · Priority routing · Team workspaces · Deploy</p>
-            <Link href="/builder" style={{ display: 'block', marginTop: 24, background: '#7c5cff', padding: 12, borderRadius: 8, textAlign: 'center', fontWeight: 700 }}>Go Pro</Link>
+          <a href="/api/auth/github" style={{ display: 'block', marginTop: 24, border: '1px solid #333', padding: 12, borderRadius: 8, textAlign: 'center' }}>Sign in</a>
+          <button onClick={async () => { const r = await fetch('/api/billing/checkout', { method: 'POST' }); const d = await r.json(); if (d.url) window.location.href = d.url; else alert(d.error ?? 'Billing not configured'); }} style={{ display: 'block', marginTop: 10, width: '100%', background: '#7c5cff', color: '#fff', border: 'none', padding: 12, borderRadius: 8, textAlign: 'center', fontWeight: 700, cursor: 'pointer' }}>Go Pro →</button>
           </div>
         </div>
       </section>

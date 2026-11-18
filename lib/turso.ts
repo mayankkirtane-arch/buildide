@@ -25,6 +25,18 @@ export async function initDb() {
     )
   `);
   await client.execute(`
+    CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      email TEXT,
+      name TEXT,
+      avatar TEXT,
+      is_pro INTEGER DEFAULT 0,
+      prompts_used INTEGER DEFAULT 0,
+      prompt_day TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  await client.execute(`
     CREATE TABLE IF NOT EXISTS projects (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL,

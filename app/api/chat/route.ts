@@ -1,4 +1,6 @@
 import { routeModel, SYSTEM_PROMPT } from '@/lib/router';
+import { currentUserId } from '@/lib/auth';
+import { db, initDb } from '@/lib/turso';
 
 // Agent API: BYOK. The user's OpenRouter key is sent per-request from the browser
 // (stored encrypted client-side). Server never stores it. Proxies to OpenRouter.
@@ -18,6 +20,31 @@ export async function POST(req: Request) {
 
     const lastUser = [...messages].reverse().find((m: any) => m.role === 'user');
     const choice = routeModel(lastUser?.content ?? '');
+
+    // Free tier: 10 prompts/day. Pro: unlimited. Enforced server-side from Turso.
+    const uid = await currentUserId();
+    if (uid) {
+      await initDb();
+      const today = new Date().toISOString().slice(0, 10);
+      const { rows } = await db().execute({
+        sql: 'SELECT is_pro, prompts_used, prompt_day FROM users WHERE id = ?',
+        args: [uid],
+      });
+      const u: any = rows[0] ?? {};
+      if (!u.is_pro) {
+        const used = u.prompt_day === today ? (u.prompts_used ?? 0) : 0;
+        if (used >= 10) {
+          return Response.json(
+            { error: 'Free limit reached: 10 prompts/day. Upgrade to Pro at /pricing.', upgrade: true },
+            { status: 429 }
+          );
+        }
+        await db().execute({
+          sql: 'UPDATE users SET prompts_used = ?, prompt_day = ? WHERE id = ?',
+          args: [used + 1, today, uid],
+        });
+      }
+    }
 
     const upstream = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',

@@ -1,15 +1,15 @@
 import { db, initDb } from '@/lib/turso';
+import { currentUserId } from '@/lib/auth';
 
-// Simple anonymous user id passed from the client (localStorage device id).
-// Phase 2: replace with real auth (GitHub OAuth) and use session user id.
-function userId(req: Request): string {
-  return req.headers.get('x-user-id') ?? 'anonymous';
+// Prefer the signed session; fall back to header only for legacy local-dev use.
+async function userId(req: Request): Promise<string> {
+  return (await currentUserId()) ?? req.headers.get('x-user-id') ?? 'anonymous';
 }
 
 export async function GET(req: Request) {
   try {
     await initDb();
-    const uid = userId(req);
+    const uid = await userId(req);
     const { rows } = await db().execute({
       sql: 'SELECT id, name, files, updated_at FROM projects WHERE user_id = ? ORDER BY updated_at DESC LIMIT 50',
       args: [uid],
@@ -24,7 +24,7 @@ export async function POST(req: Request) {
   try {
     await initDb();
     const { name, files } = await req.json();
-    const uid = userId(req);
+    const uid = await userId(req);
     const id = crypto.randomUUID();
     await db().execute({
       sql: 'INSERT INTO projects (id, user_id, name, files) VALUES (?, ?, ?, ?)',
